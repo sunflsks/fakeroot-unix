@@ -89,18 +89,18 @@
 
 #include "config.h"
 #include "communicate.h"
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 # include <sys/ipc.h>
 # include <sys/msg.h>
 # include <sys/sem.h>
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 # include <sys/socket.h>
 # include <sys/param.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
 # include <arpa/inet.h>
 # include <netdb.h>
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -126,11 +126,11 @@
 # include <dirent.h>
 #endif
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 # define FAKE_KEY msg_key
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 # define FAKE_KEY port
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 #ifndef SOL_TCP
 # define SOL_TCP 6 /* this should probably be done with getprotoent */
@@ -138,7 +138,7 @@
 
 #define fakestat_equal(a, b)  ((a)->dev == (b)->dev && (a)->ino == (b)->ino)
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 # if HAVE_SEMUN_DEF == 0
   union semun {
     int val;
@@ -146,7 +146,7 @@
     u_short *array;
   };
 # endif
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
 
 void process_chown(struct fake_msg *buf);
 void process_chmod(struct fake_msg *buf);
@@ -158,7 +158,7 @@ void process_setxattr(struct fake_msg *buf);
 void process_getxattr(struct fake_msg *buf);
 void process_removexattr(struct fake_msg *buf);
 
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 static int get_fakem(struct fake_msg *buf);
 #endif
 
@@ -179,19 +179,19 @@ process_func func_arr[]={process_chown,
 
 unsigned int highest_funcid = sizeof(func_arr)/sizeof(func_arr[0]);
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 key_t msg_key=0;
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 static int comm_sd = -1;
 static volatile int detached = 0;
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 int debug = 0, unknown_is_real = 0;
 char *save_file = NULL;
 
 void cleanup(int);
 
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 static void fail(const char *msg)
 {
   if (errno > 0)
@@ -400,7 +400,7 @@ static unsigned int data_size(void)
 #define data_end()    (NULL)
 
 
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 static struct {
   unsigned int capacity;
   unsigned int size;
@@ -475,7 +475,7 @@ static void faked_send_fakem(const struct fake_msg *buf)
 
 # define faked_send_fakem send_fakem
 
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 #ifdef FAKEROOT_DB_PATH
 # define DB_PATH_LEN    4095
@@ -1066,7 +1066,7 @@ void process_msg(struct fake_msg *buf){
     func_arr[f]((struct fake_msg*)buf);
 }
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 
 void get_msg()
 {
@@ -1090,7 +1090,7 @@ void get_msg()
   }
 }
 
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 
 void get_msg(const int listen_sd)
 {
@@ -1186,7 +1186,7 @@ void get_msg(const int listen_sd)
   }
 }
 
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 /***********/
 /*         */
@@ -1204,7 +1204,7 @@ void save(int dummy){
     fprintf(stderr, "fakeroot: database save FAILED\n");
 }
 
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 static void detach(int g)
 {
   int saved_errno = errno;
@@ -1216,28 +1216,28 @@ static void detach(int g)
 
   errno = saved_errno;
 }
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 # define FAKEROOT_CLEANUPMSG "fakeroot: clearing up message queues and semaphores, signal=%i\n"
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 # define FAKEROOT_CLEANUPMSG "fakeroot: signal=%i\n"
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 void cleanup(int g)
 {
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   union semun sem_union;
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
 
   if(debug)
     fprintf(stderr, FAKEROOT_CLEANUPMSG,  g);
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   msgctl (msg_get, IPC_RMID,NULL);
   msgctl (msg_snd, IPC_RMID,NULL);
   semctl (sem_id,0,IPC_RMID,sem_union);
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
 
   save(0);
 
@@ -1262,7 +1262,7 @@ static long int read_intarg(char **argv)
   }
 }
 
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 static int get_fakem(struct fake_msg *buf)
 {
   while (1) {
@@ -1295,7 +1295,7 @@ static int get_fakem(struct fake_msg *buf)
 
   return 0;
 }
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 int main(int argc, char **argv){
   struct sigaction sa,sa_debug,sa_save;
@@ -1303,17 +1303,17 @@ int main(int argc, char **argv){
   int foreground = 0;
   int load = 0;
   int pid;
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   union semun sem_union;
   int justcleanup = 0;
   int msgflag = IPC_CREAT|0600;
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
   int sd, val;
   unsigned int port = 0;
   struct sockaddr_in addr;
   socklen_t addr_len;
   struct sigaction sa_detach;
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
   if(getenv(FAKEROOTKEY_ENV)) {
  /* I'm not sure -- maybe this can work?) */
@@ -1323,25 +1323,25 @@ int main(int argc, char **argv){
 
   while(*(++argv)){
     if(!strcmp(*argv,"--key"))
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
       msg_key=read_intarg(++argv);
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
       fprintf(stderr,"This fakeroot has been compiled for TCP and does not support --key\n");
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
     else if(!strcmp(*argv,"--cleanup")) {
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
       msg_key=read_intarg(++argv);
       justcleanup= 1;
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
       fprintf(stderr,"This fakeroot has been compiled for TCP and does not support --cleanup\n");
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
     }
     else if(!strcmp(*argv,"--port"))
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
       fprintf(stderr,"This fakeroot has been compiled for SYSV IPC and does not support --port\n");
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
       port=read_intarg(++argv);
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
     else if(!strcmp(*argv,"--foreground"))
       foreground = 1;
     else if(!strcmp(*argv,"--debug"))
@@ -1358,11 +1358,11 @@ int main(int argc, char **argv){
     } else {
       fprintf(stderr,"faked, daemon for fake root environment\n");
       fprintf(stderr,"Best used from the shell script `fakeroot'\n");
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
       fprintf(stderr,"options for fakeroot: --key, --cleanup, --foreground, --debug, --save-file, --load, --unknown-is-real\n");
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
       fprintf(stderr,"options for fakeroot: --port, --foreground, --debug, --save-file, --load, --unknown-is-real\n");
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
       exit(1);
     }
   }
@@ -1375,7 +1375,7 @@ int main(int argc, char **argv){
       exit(1);
     }
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 
   do {
     if(!msg_key) {
@@ -1420,7 +1420,7 @@ int main(int argc, char **argv){
   if(justcleanup)
     cleanup(0);
 
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 
   sd = socket(PF_INET, SOCK_STREAM, 0);
   if (sd < 0)
@@ -1457,7 +1457,7 @@ int main(int argc, char **argv){
   sigemptyset(&sa_detach.sa_mask);
   sa_detach.sa_flags=0;
 
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
   sa.sa_handler=cleanup;
   sigemptyset(&sa.sa_mask);
@@ -1487,11 +1487,11 @@ int main(int argc, char **argv){
     case SIGUSR2:
       sigaction(i,&sa_debug,NULL);
       break;
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
     case SIGHUP:
       sigaction(i,&sa_detach,NULL);
       break;
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
     default:
       sigaction(i,&sa,NULL);
       break;
@@ -1508,9 +1508,9 @@ int main(int argc, char **argv){
 
       /* This is the child closing its file descriptors. */
       for (fl= 0; fl <= num_fds; ++fl)
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 	if (fl != sd)
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 	  close(fl);
       setsid();
     } else {
@@ -1523,11 +1523,11 @@ int main(int argc, char **argv){
     fflush(stdout);
   }
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   get_msg();    /* we shouldn't return from this function */
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
   get_msg(sd);  /* we shouldn't return from this function */
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
   cleanup(-1);  /* if we do return, try to clean up and exit with a nonzero
 		   return status */

@@ -81,9 +81,9 @@ dnl Checks for programs.
 dnl Checks for libraries.
 dnl Replace `main' with a function in -ldl:
 AC_CHECK_LIB(dl, dlopen)
-AH_TEMPLATE([FAKEROOT_FAKENET], [use TCP instead of SysV IPC])
+AH_TEMPLATE([FAKEROOT_SOCKET], [use TCP instead of SysV IPC])
 if test $ac_cv_use_ipc = "tcp"; then
-AC_DEFINE_UNQUOTED(FAKEROOT_FAKENET, [TCP])
+AC_DEFINE_UNQUOTED(FAKEROOT_SOCKET, [TCP])
 AC_CHECK_LIB(pthread, pthread_self)
 AC_CHECK_LIB(socket, connect)
 signal=HUP

@@ -1424,7 +1424,7 @@ int renameat(int olddir_fd, const char *oldpath,
 #endif /* GLIBC_PREREQ */
 
 
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 pid_t fork(void)
 {
   pid_t pid;
@@ -1490,7 +1490,7 @@ int dup2(int oldfd, int newfd)
   errno = reterr;
   return retval;
 }
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 #ifdef __APPLE__
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6

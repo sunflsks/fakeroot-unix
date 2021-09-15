@@ -91,9 +91,9 @@
 # include <inttypes.h>
 #endif
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 # define FAKEROOTKEY_ENV          "FAKEROOTKEY"
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
 
 #define FAKEROOTUID_ENV           "FAKEROOTUID"
 #define FAKEROOTGID_ENV           "FAKEROOTGID"
@@ -107,9 +107,9 @@
 
 #define FAKELIBDIR                "/usr/lib/fakeroot"
 #define FAKELIBNAME               "libfakeroot.so.0"
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 # define FD_BASE_ENV              "FAKEROOT_FD_BASE"
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 #ifdef FAKEROOT_DB_PATH
 # define DB_SEARCH_PATHS_ENV      "FAKEROOT_DB_SEARCH_PATHS"
 #endif /* FAKEROOT_DB_PATH */
@@ -187,7 +187,7 @@ extern void cpystatfakem(struct     stat *st, const struct fake_msg *buf);
 extern void cpystatfakem(struct     stat *st, const struct fake_msg *buf, int ver);
 #endif
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 extern int init_get_msg();
 extern key_t get_ipc_key(key_t new_key);
 # ifndef STUPID_ALPHA_HACK
@@ -195,13 +195,13 @@ extern void cpyfakemstat(struct fake_msg *b1, const struct stat *st);
 # else
 extern void cpyfakemstat(struct fake_msg *b1, const struct stat *st, int ver);
 # endif
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 # ifdef FAKEROOT_LIBFAKEROOT
 extern volatile int comm_sd;
 extern void lock_comm_sd(void);
 extern void unlock_comm_sd(void);
 # endif
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 #ifdef STAT64_SUPPORT
 #ifndef STUPID_ALPHA_HACK
@@ -217,10 +217,10 @@ extern void stat64from32(struct stat64 *s64, const struct stat *s32);
 extern void stat32from64(struct stat *s32, const struct stat64 *s64);
 #endif
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 extern int msg_snd;
 extern int msg_get;
 extern int sem_id;
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
 
 #endif

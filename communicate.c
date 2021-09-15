@@ -30,11 +30,11 @@
 #include "communicate.h"
 #include <dlfcn.h>
 #include <stdio.h>
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 # include <sys/ipc.h>
 # include <sys/msg.h>
 # include <sys/sem.h>
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 # include <netinet/in.h>
 # include <netinet/tcp.h>
 # include <netdb.h>
@@ -42,7 +42,7 @@
 # ifdef HAVE_ENDIAN_H
 #  include <endian.h>
 # endif
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -64,17 +64,17 @@
 #endif
 
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 int msg_snd=-1;
 int msg_get=-1;
 int sem_id=-1;
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 volatile int comm_sd = -1;
 static pthread_mutex_t comm_sd_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 
-#ifdef FAKEROOT_FAKENET
+#ifdef FAKEROOT_SOCKET
 static void fail(const char *msg)
 {
   if (errno > 0)
@@ -84,7 +84,7 @@ static void fail(const char *msg)
 
   exit(1);
 }
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 const char *env_var_set(const char *env){
   const char *s;
@@ -393,7 +393,7 @@ void stat32from64(struct stat *s32, const struct stat64 *s64)
 
 #endif
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 
 void semaphore_up(){
   struct sembuf op;
@@ -434,7 +434,7 @@ void semaphore_down(){
   }
 }
 
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 
 static struct sockaddr *get_addr(void)
 {
@@ -495,9 +495,9 @@ void unlock_comm_sd(void)
   pthread_mutex_unlock(&comm_sd_mutex);
 }
 
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 
 void send_fakem(const struct fake_msg *buf)
 {
@@ -576,7 +576,7 @@ void send_get_fakem(struct fake_msg *buf)
   }
 }
 
-#else /* FAKEROOT_FAKENET */
+#else /* FAKEROOT_SOCKET */
 
 
 static size_t write_all(int fd,const void*buf,size_t count) {
@@ -694,7 +694,7 @@ void send_get_fakem(struct fake_msg *buf)
   unlock_comm_sd();
 }
 
-#endif /* FAKEROOT_FAKENET */
+#endif /* FAKEROOT_SOCKET */
 
 void send_stat(const struct stat *st,
 	       func_id_t f
@@ -704,9 +704,9 @@ void send_stat(const struct stat *st,
 	       ){
   struct fake_msg buf;
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   if(init_get_msg()!=-1)
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
   {
 #ifndef STUPID_ALPHA_HACK
     cpyfakemstat(&buf,st);
@@ -727,9 +727,9 @@ void send_stat64(const struct stat64 *st,
                  ){
   struct fake_msg buf;
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   if(init_get_msg()!=-1)
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
   {
 #ifndef STUPID_ALPHA_HACK
     cpyfakemstat64(&buf,st);
@@ -749,9 +749,9 @@ void send_get_stat(struct stat *st
 		){
   struct fake_msg buf;
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   if(init_get_msg()!=-1)
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
   {
 #ifndef STUPID_ALPHA_HACK
     cpyfakemstat(&buf,st);
@@ -780,9 +780,9 @@ void send_get_xattr(struct stat *st
   size_t name_size;
   size_t total_size;
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   if(init_get_msg()!=-1)
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
   {
 #ifndef STUPID_ALPHA_HACK
     cpyfakemstat(&buf,st);
@@ -835,9 +835,9 @@ void send_get_stat64(struct stat64 *st
 {
   struct fake_msg buf;
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   if(init_get_msg()!=-1)
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
   {
 #ifndef STUPID_ALPHA_HACK
     cpyfakemstat64(&buf,st);
@@ -866,9 +866,9 @@ void send_get_xattr64(struct stat64 *st
   size_t name_size;
   size_t total_size;
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
   if(init_get_msg()!=-1)
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */
   {
 #ifndef STUPID_ALPHA_HACK
     cpyfakemstat64(&buf,st);
@@ -913,7 +913,7 @@ void send_get_xattr64(struct stat64 *st
 }
 #endif /* STAT64_SUPPORT */
 
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 
 key_t get_ipc_key(key_t new_key)
 {
@@ -991,4 +991,4 @@ int fake_get_owner(int is_lstat, const char *key, const char *path,
   return 0;
 }
 
-#endif /* ! FAKEROOT_FAKENET */
+#endif /* ! FAKEROOT_SOCKET */

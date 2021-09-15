@@ -82,11 +82,11 @@ struct fakexattr {
 #pragma pack(4)
 #endif
 struct fake_msg {
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 	long mtype; /* message type in SYSV message sending */
 #endif
 	func_id_t       id; /* the requested function */
-#ifndef FAKEROOT_FAKENET
+#ifndef FAKEROOT_SOCKET
 	pid_t pid;
 	int serial;
 #endif
