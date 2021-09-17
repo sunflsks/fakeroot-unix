@@ -35,10 +35,12 @@
 # include <sys/msg.h>
 # include <sys/sem.h>
 #else /* FAKEROOT_SOCKET */
+# include <sys/param.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
 # include <netdb.h>
 # include <pthread.h>
+# include <sys/un.h>
 # ifdef HAVE_ENDIAN_H
 #  include <endian.h>
 # endif
@@ -438,9 +440,15 @@ void semaphore_down(){
 
 static struct sockaddr *get_addr(void)
 {
+# if FAKEROOT_SOCKET==1
   static struct sockaddr_in addr = { 0, 0, { 0 } };
+# elif FAKEROOT_SOCKET==2
+  static struct sockaddr_un addr = { 0 , { 0 } };
+# endif
 
+# if FAKEROOT_SOCKET==1
   if (!addr.sin_port) {
+# endif
     char *str;
     int port;
 
@@ -451,15 +459,27 @@ static struct sockaddr *get_addr(void)
     }
 
     port = atoi(str);
+# if FAKEROOT_SOCKET==1
     if (port <= 0 || port >= 65536) {
       errno = 0;
       fail("invalid port number in FAKEROOTKEY");
     }
+# endif
 
+# if FAKEROOT_SOCKET==2
+    char sockpath[MAXPATHLEN];
+    snprintf(sockpath, MAXPATHLEN, "/tmp/%d.fakerootsock", port);
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, sockpath);
+# elif FAKEROOT_SOCKET==1
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = htons(port);
+# endif
+
+#if FAKEROOT_SOCKET==1
   }
+#endif
 
   return (struct sockaddr *) &addr;
 }
@@ -469,7 +489,12 @@ static void open_comm_sd(void)
   if (comm_sd >= 0)
     return;
 
-  comm_sd = socket(PF_INET, SOCK_STREAM, 0);
+#if FAKEROOT_SOCKET==1
+  comm_sd = socket(AF_INET, SOCK_STREAM, 0);
+#elif FAKEROOT_SOCKET==2
+  comm_sd = socket(AF_UNIX, SOCK_STREAM, 0);
+#endif
+
   if (comm_sd < 0)
     fail("socket");
 
@@ -477,9 +502,17 @@ static void open_comm_sd(void)
     fail("fcntl(F_SETFD, FD_CLOEXEC)");
 
   while (1) {
-    if (connect(comm_sd, get_addr(), sizeof (struct sockaddr_in)) < 0) {
-      if (errno != EINTR)
+#if FAKEROOT_SOCKET==1
+    struct sockaddr_in* addr = (void*)get_addr();
+    int sz = sizeof(struct sockaddr_in);
+#elif FAKEROOT_SOCKET==2
+    struct sockaddr_un* addr = (void*)get_addr();
+    int sz = sizeof(struct sockaddr_un);
+#endif
+    if (connect(comm_sd, addr, sz) < 0) {
+      if (errno != EINTR) {
         fail("connect");
+      }
     } else
       break;
   }

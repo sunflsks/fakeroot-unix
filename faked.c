@@ -100,6 +100,9 @@
 # include <netinet/tcp.h>
 # include <arpa/inet.h>
 # include <netdb.h>
+# if FAKEROOT_SOCKET==2
+#  include <sys/un.h>
+# endif
 #endif /* FAKEROOT_SOCKET */
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -1310,7 +1313,11 @@ int main(int argc, char **argv){
 #else /* FAKEROOT_SOCKET */
   int sd, val;
   unsigned int port = 0;
+# if FAKEROOT_SOCKET==1
   struct sockaddr_in addr;
+# elif FAKEROOT_SOCKET==2
+  struct sockaddr_un addr;
+# endif
   socklen_t addr_len;
   struct sigaction sa_detach;
 #endif /* FAKEROOT_SOCKET */
@@ -1422,7 +1429,12 @@ int main(int argc, char **argv){
 
 #else /* FAKEROOT_SOCKET */
 
+# if FAKEROOT_SOCKET==1
   sd = socket(PF_INET, SOCK_STREAM, 0);
+# elif FAKEROOT_SOCKET==2
+  sd = socket(PF_UNIX, SOCK_STREAM, 0);
+# endif
+
   if (sd < 0)
     fail("socket");
 
@@ -1430,15 +1442,29 @@ int main(int argc, char **argv){
   if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val)) < 0)
     fail("setsockopt(SO_REUSEADDR)");
 
+# if FAKEROOT_SOCKET==1
   val = 1;
   if (setsockopt(sd, SOL_TCP, TCP_NODELAY, &val, sizeof (val)) < 0)
     fail("setsockopt(TCP_NODELAY)");
+# endif
+
+  if (FAKEROOT_SOCKET == 2 && port <= 0) {
+      srand(time(NULL));
+      port = rand();
+  }
 
   if (port > 0) {
     memset((char *) &addr, 0, sizeof (addr));
+# if FAKEROOT_SOCKET==1
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = htons(port);
+# elif FAKEROOT_SOCKET==2
+    char path[MAXPATHLEN];
+    snprintf(path, MAXPATHLEN, "/tmp/%d.fakerootsock", port);
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, path);
+# endif
 
     if (bind(sd, (struct sockaddr *) &addr, sizeof (addr)) < 0)
       fail("bind");
@@ -1451,7 +1477,9 @@ int main(int argc, char **argv){
   if (getsockname(sd, (struct sockaddr *) &addr, &addr_len) < 0)
     fail("getsockname");
 
+# if FAKEROOT_SOCKET==1
   port = ntohs(addr.sin_port);
+# endif
 
   sa_detach.sa_handler=detach;
   sigemptyset(&sa_detach.sa_mask);
