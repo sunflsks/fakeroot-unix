@@ -141,6 +141,10 @@
 
 #define fakestat_equal(a, b)  ((a)->dev == (b)->dev && (a)->ino == (b)->ino)
 
+#if FAKEROOT_SOCKET==2
+static char global_sockpath[MAXPATHLEN];
+#endif
+
 #ifndef FAKEROOT_SOCKET
 # if HAVE_SEMUN_DEF == 0
   union semun {
@@ -1241,6 +1245,10 @@ void cleanup(int g)
   msgctl (msg_snd, IPC_RMID,NULL);
   semctl (sem_id,0,IPC_RMID,sem_union);
 #endif /* ! FAKEROOT_SOCKET */
+
+#if FAKEROOT_SOCKET==2
+  unlink(global_sockpath);
+#endif
 
   save(0);
 
