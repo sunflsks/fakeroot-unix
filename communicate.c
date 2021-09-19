@@ -468,7 +468,7 @@ static struct sockaddr *get_addr(void)
 
 # if FAKEROOT_SOCKET==2
     char sockpath[MAXPATHLEN];
-    snprintf(sockpath, MAXPATHLEN, "/tmp/%d.fakerootsock", port);
+    snprintf(sockpath, MAXPATHLEN, "/tmp/.fakerootsock/%d.fakerootsock", port);
     addr.sun_family = AF_UNIX;
     strcpy(addr.sun_path, sockpath);
 # elif FAKEROOT_SOCKET==1

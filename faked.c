@@ -1460,10 +1460,13 @@ int main(int argc, char **argv){
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = htons(port);
 # elif FAKEROOT_SOCKET==2
-    char path[MAXPATHLEN];
-    snprintf(path, MAXPATHLEN, "/tmp/%d.fakerootsock", port);
+    mkdir("/tmp/.fakerootsock", S_IRWXU);
     addr.sun_family = AF_UNIX;
+    size_t pathlen = sizeof(addr.sun_path);
+    char path[pathlen];
+    snprintf(path, pathlen, "/tmp/.fakerootsock/%d.fakerootsock", port);
     strcpy(addr.sun_path, path);
+    strcpy(global_sockpath, path);
 # endif
 
     if (bind(sd, (struct sockaddr *) &addr, sizeof (addr)) < 0)
