@@ -1330,6 +1330,8 @@ int main(int argc, char **argv){
   struct sigaction sa_detach;
 #endif /* FAKEROOT_SOCKET */
 
+  srandom(time(NULL)+getpid()*33151);
+
   if(getenv(FAKEROOTKEY_ENV)) {
  /* I'm not sure -- maybe this can work?) */
     fprintf(stderr,"Please, don't run fakeroot from within fakeroot!\n");
@@ -1395,7 +1397,6 @@ int main(int argc, char **argv){
   do {
     if(!msg_key) {
       msgflag |= IPC_EXCL;
-      srandom(time(NULL)+getpid()*33151);
       while(!msg_key && (msg_key!=-1))  /* values 0 and -1 are treated
                                            specially by libfake */
         msg_key=random();
@@ -1457,8 +1458,7 @@ int main(int argc, char **argv){
 # endif
 
   if (FAKEROOT_SOCKET == 2 && port <= 0) {
-      srand(time(NULL));
-      port = rand();
+      port = (int)random();
   }
 
   if (port > 0) {
