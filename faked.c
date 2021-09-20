@@ -131,8 +131,10 @@
 
 #ifndef FAKEROOT_SOCKET
 # define FAKE_KEY msg_key
-#else /* FAKEROOT_SOCKET */
+#elif FAKEROOT_SOCKET==1 /* TCP */
 # define FAKE_KEY port
+#elif FAKEROOT_SOCKET==2 /* Unix domain socket */
+# define FAKE_KEY sockprefix
 #endif /* FAKEROOT_SOCKET */
 
 #ifndef SOL_TCP
@@ -1320,7 +1322,12 @@ int main(int argc, char **argv){
   int msgflag = IPC_CREAT|0600;
 #else /* FAKEROOT_SOCKET */
   int sd, val;
+#if FAKEROOT_SOCKET==1
   unsigned int port = 0;
+#elif FAKEROOT_SOCKET==2
+  unsigned long sockprefix = 0;
+#endif
+
 # if FAKEROOT_SOCKET==1
   struct sockaddr_in addr;
 # elif FAKEROOT_SOCKET==2
@@ -1343,22 +1350,28 @@ int main(int argc, char **argv){
 #ifndef FAKEROOT_SOCKET
       msg_key=read_intarg(++argv);
 #else /* FAKEROOT_SOCKET */
-      fprintf(stderr,"This fakeroot has been compiled for TCP and does not support --key\n");
+      fprintf(stderr,"This fakeroot has not been compiled for SYSV IPC and does not support --key\n");
 #endif /* FAKEROOT_SOCKET */
     else if(!strcmp(*argv,"--cleanup")) {
 #ifndef FAKEROOT_SOCKET
       msg_key=read_intarg(++argv);
       justcleanup= 1;
 #else /* FAKEROOT_SOCKET */
-      fprintf(stderr,"This fakeroot has been compiled for TCP and does not support --cleanup\n");
+      fprintf(stderr,"This fakeroot has not been compiled for SYSV IPC and does not support --cleanup\n");
 #endif /* FAKEROOT_SOCKET */
     }
     else if(!strcmp(*argv,"--port"))
-#ifndef FAKEROOT_SOCKET
-      fprintf(stderr,"This fakeroot has been compiled for SYSV IPC and does not support --port\n");
-#else /* FAKEROOT_SOCKET */
+#if FAKEROOT_SOCKET != 1
+      fprintf(stderr,"This fakeroot has not been compiled for TCP IPC and does not support --port\n");
+#else /* FAKEROOT_SOCKET == 1 (TCP) */
       port=read_intarg(++argv);
-#endif /* FAKEROOT_SOCKET */
+#endif /* FAKEROOT_SOCKET == 1 (TCP) */
+    else if (!strcmp(*argv, "--sockprefix"))
+#if FAKEROOT_SOCKET != 2
+      fprintf(stderr, "This fakeroot has not been compiled using Unix domain sockets for IPC and does not support --sockprefix");
+#else /* FAKEROOT_SOCKET == 2 (UNIX) */
+    sockprefix = read_intarg(++argv);
+#endif
     else if(!strcmp(*argv,"--foreground"))
       foreground = 1;
     else if(!strcmp(*argv,"--debug"))
@@ -1377,8 +1390,10 @@ int main(int argc, char **argv){
       fprintf(stderr,"Best used from the shell script `fakeroot'\n");
 #ifndef FAKEROOT_SOCKET
       fprintf(stderr,"options for fakeroot: --key, --cleanup, --foreground, --debug, --save-file, --load, --unknown-is-real\n");
-#else /* FAKEROOT_SOCKET */
+#elif FAKEROOT_SOCKET==1 /* TCP */
       fprintf(stderr,"options for fakeroot: --port, --foreground, --debug, --save-file, --load, --unknown-is-real\n");
+#elif FAKEROOT_SOCKET==2 /* UNIX */
+      fprintf(stderr,"options for fakeroot: --sockprefix, --foreground, --debug, --save-file, --load, --unknown-is-real\n");
 #endif /* FAKEROOT_SOCKET */
       exit(1);
     }
@@ -1457,11 +1472,13 @@ int main(int argc, char **argv){
     fail("setsockopt(TCP_NODELAY)");
 # endif
 
-  if (FAKEROOT_SOCKET == 2 && port <= 0) {
-      port = (int)random();
+#if FAKEROOT_SOCKET==2
+  if (sockprefix <= 0) {
+      sockprefix = random();
   }
+#endif
 
-  if (port > 0) {
+  if (FAKE_KEY > 0) {
     memset((char *) &addr, 0, sizeof (addr));
 # if FAKEROOT_SOCKET==1
     addr.sin_family = AF_INET;
@@ -1472,7 +1489,7 @@ int main(int argc, char **argv){
     addr.sun_family = AF_UNIX;
     size_t pathlen = sizeof(addr.sun_path);
     char path[pathlen];
-    snprintf(path, pathlen, "/tmp/.fakerootsock/%d.fakerootsock", port);
+    snprintf(path, pathlen, "/tmp/.fakerootsock/%lu.fakerootsock", sockprefix);
     strcpy(addr.sun_path, path);
     strcpy(global_sockpath, path);
 # endif
