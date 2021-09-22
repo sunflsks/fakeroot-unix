@@ -450,7 +450,7 @@ static struct sockaddr *get_addr(void)
   if (!addr.sin_port) {
 # endif
     char *str;
-    int port;
+    int key; /* port on TCP, socket prefix on Unix */
 
     str = (char *) env_var_set(FAKEROOTKEY_ENV);
     if (!str) {
@@ -458,9 +458,9 @@ static struct sockaddr *get_addr(void)
       fail("FAKEROOTKEY not defined in environment");
     }
 
-    port = atoi(str);
+    key = atoi(str);
 # if FAKEROOT_SOCKET==1
-    if (port <= 0 || port >= 65536) {
+    if (key <= 0 || key >= 65536) {
       errno = 0;
       fail("invalid port number in FAKEROOTKEY");
     }
@@ -468,13 +468,13 @@ static struct sockaddr *get_addr(void)
 
 # if FAKEROOT_SOCKET==2
     char sockpath[MAXPATHLEN];
-    snprintf(sockpath, MAXPATHLEN, "/tmp/.fakerootsock/%d.fakerootsock", port);
+    snprintf(sockpath, MAXPATHLEN, "/tmp/.fakerootsock/%d.fakerootsock", key);
     addr.sun_family = AF_UNIX;
     strcpy(addr.sun_path, sockpath);
 # elif FAKEROOT_SOCKET==1
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    addr.sin_port = htons(port);
+    addr.sin_port = htons(key);
 # endif
 
 #if FAKEROOT_SOCKET==1
@@ -509,7 +509,7 @@ static void open_comm_sd(void)
     struct sockaddr_un* addr = (void*)get_addr();
     int sz = sizeof(struct sockaddr_un);
 #endif
-    if (connect(comm_sd, addr, sz) < 0) {
+    if (connect(comm_sd, (struct sockaddr*)addr, sz) < 0) {
       if (errno != EINTR) {
         fail("connect");
       }
